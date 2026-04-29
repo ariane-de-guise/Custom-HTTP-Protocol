@@ -1,22 +1,53 @@
-﻿using System.Collections.Concurrent;
-
-namespace Server;
+﻿namespace Server;
 
 public static class Messages
 {
-    private static readonly ConcurrentDictionary<int, string> ApiMessages = new();
-    private static int _nextId = 0;
+    private static readonly List<Message> ApiMessages = new();
+    private static readonly Lock Lock = new();
+    private static int _nextId;
 
-    public static string GetMessage(int id) => ApiMessages.GetValueOrDefault(id, $"Unknown message id: {id}");
-    
-    public static ConcurrentDictionary<int, string> GetMessages() => ApiMessages;
-    
-    public static void AddMessage(string message) => ApiMessages.TryAdd(GetNextId(),message);
-    
-    public static void UpdateMessage(int id, string message) => ApiMessages[id] = message;
-    
-    public static void RemoveMessage(int id) => ApiMessages.TryRemove(id, out _);
-    
-    public static void ClearMessages() => ApiMessages.Clear();
-    private static int GetNextId() => Interlocked.Increment(ref _nextId);
+    public static Message? GetMessage(int id)
+    {
+        lock (Lock)
+        {
+            return ApiMessages.FirstOrDefault(m => m.Id == id) ?? null;
+        }
+    }
+
+    public static List<Message> GetMessages()
+    {
+        lock (Lock)
+        {
+            return ApiMessages;
+        }
+    }
+
+    public static void AddMessage(string message)
+    {
+        lock (Lock)
+        {
+            ApiMessages.Add(new Message(GetNextId(), message));
+        }
+    }
+
+    public static void UpdateMessage(int id, string message)
+    {
+        lock (Lock)
+        {
+            ApiMessages.FirstOrDefault(m => m.Id == id)?.Content = message;
+        }
+    }
+
+    public static void RemoveMessage(int id)
+    {
+        lock (Lock)
+        {
+            ApiMessages.RemoveAll(m => m.Id == id);
+        }
+    }
+
+    private static int GetNextId()
+    {
+        return Interlocked.Increment(ref _nextId);
+    }
 }

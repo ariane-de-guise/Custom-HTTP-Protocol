@@ -1,6 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Text;
-using shared;
+﻿using shared;
 
 namespace Server;
 
@@ -9,82 +7,56 @@ public static class HttpReader
     public static async Task<Dictionary<HttpLabels, string>> ReadHttpHeaders(StreamReader reader)
     {
         Dictionary<HttpLabels, string> headers = new();
-        
-        string? route = await reader.ReadLineAsync();
-        Console.WriteLine(route);
-        
-        (HttpLabels method, string url) = ParseHeader(route);
-        
-        if (method == HttpLabels.Unknown)
-        {
-            throw new ArgumentException("405");
-        }
-        
+
+        var route = await reader.ReadLineAsync();
+
+        var (method, url) = ParseHeader(route);
+
+        if (method == HttpLabels.Unknown) throw new ArgumentException("405");
+
         headers[method] = url;
-        
+
         while (true)
         {
-            string? line = await reader.ReadLineAsync();
-            Console.WriteLine(line);
+            var line = await reader.ReadLineAsync();
 
-            if (string.IsNullOrEmpty(line))
-            {
-                break;
-            }
-            
-            string[] parts = line.Split(':', 2, StringSplitOptions.TrimEntries);
+            if (string.IsNullOrEmpty(line)) break;
 
-            if (parts.Length < 2)
-            {
-                throw new ArgumentException("400");
-            }
+            var parts = line.Split(':', 2, StringSplitOptions.TrimEntries);
 
-            HttpLabels label = HttpLabelsMap.GetLabel(parts[0]);
+            if (parts.Length < 2) throw new ArgumentException("400");
+
+            var label = HttpLabelsMap.GetLabel(parts[0]);
             headers[label] = parts[1];
         }
-        
+
         return headers;
     }
-    
+
     public static async Task<string> ReadBody(StreamReader reader, int contentLength = 0)
     {
-        if (contentLength == 0)
-        {
-            return string.Empty;
-        }
+        if (contentLength == 0) return string.Empty;
 
-        char[] buffer = new char[contentLength];
-        int read = 0;
+        var buffer = new char[contentLength];
+        var read = 0;
 
-        while (read < contentLength)
-        {
-            read += await reader.ReadAsync(buffer, read, contentLength - read);
-        }
+        while (read < contentLength) read += await reader.ReadAsync(buffer, read, contentLength - read);
 
-        return new string(buffer);
+        return Uri.UnescapeDataString(new string(buffer).Replace('+', ' '));
     }
 
     private static (HttpLabels, string) ParseHeader(string? header)
     {
-        if (String.IsNullOrEmpty(header))
-        {
-            throw new ArgumentException("400");
-        }
-        
-        string[] routeParts = header.Split(' ', 3, StringSplitOptions.TrimEntries);
-        if (routeParts.Length < 3) 
-        {
-            throw new ArgumentException("400");
-        }
-        
-        HttpLabels method = HttpLabelsMap.GetLabel(routeParts[0]);
-        string url = routeParts[1];
-        
-        if (routeParts[2] != "HTTP/1.1")
-        {
-            throw new ArgumentException("400");
-        }
-        
+        if (string.IsNullOrEmpty(header)) throw new ArgumentException("400");
+
+        var routeParts = header.Split(' ', 3, StringSplitOptions.TrimEntries);
+        if (routeParts.Length < 3) throw new ArgumentException("400");
+
+        var method = HttpLabelsMap.GetLabel(routeParts[0]);
+        var url = routeParts[1];
+
+        if (routeParts[2] != "HTTP/1.1") throw new ArgumentException("400");
+
         return (method, url);
     }
 }

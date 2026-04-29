@@ -2,69 +2,50 @@
 
 namespace Server;
 
-public class UrlParser
+public static class UrlParser
 {
-    public static (Func<string, bool, string, string> method , string param) Parse(string url, HttpLabels label)
+    public static (Func<string, bool, string, string> method, string param) Parse(string url, HttpLabels label)
     {
-        string[] parts = url.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        Console.WriteLine(label);
-        Console.WriteLine(url);
-        
+        var parts = url.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
+        if ((label == HttpLabels.Get && url.Contains("script")) || url.Contains("style")) return GetUrl(url);
+
         if (parts.Length == 0)
         {
-            if (label != HttpLabels.Get)
-            {
-                throw new ArgumentException("405");
-            }
+            if (label != HttpLabels.Get) throw new ArgumentException("405");
             return (Views.Index, "");
         }
 
-        if (label == HttpLabels.Get && parts[0] != "api")
-        {
-            return GetUrl(url);
-        }
-
         if (parts.Length < 2 || parts[0] != "api" || parts[1] != "messages" || parts.Length > 3)
-        {
             throw new ArgumentException("404");
-        }
-        
-        string id = "";
-        
+
+        var id = "";
+
         if (parts.Length == 3) id = parts[2];
-        
-        if (HttpLabels.Post == label)
-        {
-            
-        }
 
         switch (label)
         {
             case HttpLabels.Get:
-                return (Views.GetMessages, id);
+                return (Views.Show, id);
             case HttpLabels.Post:
-                return (Views.CreateMessage, id);
+                return (Views.Post, id);
             case HttpLabels.Delete:
-                return (Views.DeleteMessage, id);
+                return (Views.Delete, id);
             case HttpLabels.Patch:
-                return (Views.UpdateMessage, id);
+                return (Views.Patch, id);
+            case HttpLabels.Put:
+                return (Views.Patch, id);
             default:
                 throw new ArgumentException("405");
         }
     }
-    
-    private static (Func<string, bool, string, string> method , string param) GetUrl(string url)
+
+    private static (Func<string, bool, string, string> method, string param) GetUrl(string url)
     {
-        if (url.Contains("script"))
-        {
-            return (Views.GetJs, "");
-        }
-        
-        if (url.Contains("style"))
-        {
-            return (Views.GetCss, "");
-        }
-        
+        if (url.Contains("script")) return (Views.GetJs, "");
+
+        if (url.Contains("style")) return (Views.GetCss, "");
+
         throw new ArgumentException("404");
     }
 }

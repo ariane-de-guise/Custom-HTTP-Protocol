@@ -1,117 +1,135 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
+﻿using System.Text;
+using System.Text.Json;
 
 namespace Server;
 
 public static class Views
 {
+    private static readonly JsonSerializerOptions Options = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
+
     public static string Index(string _, bool html, string __)
     {
+        if (html) return LoadPage("index.html");
+
+        var message = "Welcome to the message server! Use the following endpoints to interact with the API:\n" +
+                      "- GET / : Return to the home page\n" +
+                      "- GET /api/messages : Retrieve all messages\n" +
+                      "- GET /api/messages/{id} : Retrieve a single message\n" +
+                      "- POST /api/messages : Create a new message\n" +
+                      "- DELETE /api/messages/{id} : Delete a message\n" +
+                      "- PUT /api/messages/{id} : Update a message\n" +
+                      "- PATCH /api/messages/{id} : Partially update a message";
+        return JsonSerializer.Serialize(message, Options);
+    }
+
+    public static string Show(string id, bool html, string __)
+    {
+        if (string.IsNullOrEmpty(id)) return GetAllMessages(html);
+
+        return GetMessage(id, html);
+    }
+
+    public static string Post(string _, bool html, string message)
+    {
+        var text = message.Replace("message=", "");
+        Messages.AddMessage(text);
+
+        if (html) return "REDIRECT";
+
+        return JsonSerializer.Serialize("Message created successfully.", Options);
+    }
+
+    public static string Patch(string id, bool html, string message)
+    {
+        var text = message.Replace("_method=PATCH&message=", "");
+        Messages.UpdateMessage(int.Parse(id), text);
+
+        if (html) return "REDIRECT";
+
+        return JsonSerializer.Serialize("Message updated successfully.", Options);
+    }
+
+    public static string Delete(string id, bool html, string _)
+    {
+        Messages.RemoveMessage(int.Parse(id));
+
+        if (html) return "REDIRECT";
+
+        return JsonSerializer.Serialize("Message deleted successfully.", Options);
+    }
+
+    public static string GetCss(string _, bool __, string ___)
+    {
+        var path = Path.Combine("Styles", "style.css");
+        return File.ReadAllText(path);
+    }
+
+    public static string GetJs(string _, bool __, string ___)
+    {
+        var path = Path.Combine("Scripts", "script.js");
+        return File.ReadAllText(path);
+    }
+
+    private static string LoadPage(string fileName)
+    {
+        var path = Path.Combine("Pages", fileName);
+        return File.ReadAllText(path);
+    }
+
+    private static string GetAllMessages(bool html)
+    {
+        var messages = Messages.GetMessages();
+
         if (html)
         {
-            string page = LoadPage("index.html");
-            return page;
+            var sb = new StringBuilder();
+            foreach (var message in messages)
+                sb.AppendLine($"""
+                               <li class="message-card">
+                                   <div>
+                                       <strong>#{message.Id}</strong>
+                                       <p>{message.Content}</p>
+                                   </div>
+                                   <a class="button" href="/api/messages/{message.Id}">View</a>
+                               </li>
+                               """);
+
+            return LoadPage("list.html").Replace("{{messages}}", sb.ToString());
         }
 
-        return "Bienvenue sur le serveur de messages ! Utilisez les endpoints suivants pour interagir avec l'API :\n" +
-               "- GET /api/messages : Récupérer tous les messages\n" +
-               "- POST /api/messages : Créer un nouveau message\n" +
-               "- DELETE /api/messages/{id} : Supprimer un message\n" +
-               "- PATCH /api/messages/{id} : Mettre à jour un message";
+        return JsonSerializer.Serialize(messages, Options);
     }
-    
-    public static string GetMessages(string _, bool html, string __)
+
+    private static string GetMessage(string id, bool html)
     {
-        ConcurrentDictionary<int, string> messages = Messages.GetMessages();
-        StringBuilder sb = new StringBuilder();
-        
+        var message = Messages.GetMessage(int.Parse(id));
+
+        if (message == null) throw new ArgumentException("404");
+
         if (html)
         {
-            foreach (var message in messages)
-            {
-                sb.AppendLine($"""
-                               <li>
-                                   <p>{message.Value}</p>
-                                   <form id="editForm" action="/api/messages/{message.Key}" method="post">
+            var htmlContent = $"""
+                               <div class="message-card">
+                                   <p>Message : {message.Content}</p>
+                                   <p>ID : {message.Id}</p>
+                                   <form id="editForm" action="/api/messages/{message.Id}" method="post">
                                        <input type="hidden" name="_method" value="PATCH">
-                                       <input type="text" id="message" name="message" value="{message.Value}" required>
+                                       <input type="text" id="message" name="message" value="{message.Content}" required>
                                        <button type="submit">Edit</button>
                                    </form>
-                                   <form id="deleteForm" action="/api/messages/{message.Key}" method="post">
+                                   <form id="deleteForm" action="/api/messages/{message.Id}" method="post">
                                        <input type="hidden" name="_method" value="DELETE">
                                        <button type="submit">Delete</button>
                                    </form>
-                               </li>
-                               """);
-            }
-            
-            string page = LoadPage("list.html").Replace("{{messages}}", sb.ToString());
-            return page;
-        }
-        
-        sb.Append('[');
-        foreach (var message in messages)
-        {
-            sb.Append($"{{ \"id\": {message.Key}, \"text\": \"{message.Value}\" }}");
-            sb.Append(',');
+                               </div>
+                               """;
+            return LoadPage("show.html").Replace("{{message}}", htmlContent);
         }
 
-        if (sb.Length > 1)
-        {
-            sb.Remove(sb.Length - 1, 1);
-        }
-            
-        sb.Append(']');
-        return sb.ToString();
-    }
-    
-    public static string CreateMessage(string _, bool html, string message)
-    {
-        string text = message.Replace("message=", "");
-        Messages.AddMessage(text);
-        if (html)
-        {
-            return "REDIRECT";
-        }
-        return "Message created successfully.";
-    }
-    
-    public static string UpdateMessage(string id, bool html, string message)
-    {
-        string text = message.Replace("_method=PATCH&message=", "");
-        Messages.UpdateMessage(int.Parse(id), text);
-        if (html)
-        {
-            return "REDIRECT";
-        }
-        return "Message deleted successfully.";
-    }
-    
-    public static string DeleteMessage(string id, bool html, string _)
-    {
-        Messages.RemoveMessage(int.Parse(id));
-        if (html)
-        {
-            return "REDIRECT";
-        }
-        return "Message deleted successfully.";
-    }
-    
-    public static string GetCss(string _, bool __, string ___)
-    {
-        string path = Path.Combine("Styles", "style.css" );
-        return File.ReadAllText(path);
-    }
-    
-    public static string GetJs(string _, bool __, string ___)
-    {
-        string path = Path.Combine("Scripts", "script.js" );
-        return File.ReadAllText(path);
-    }
-    
-    private static string LoadPage(string fileName)
-    {
-        string path = Path.Combine("Pages", fileName);
-        return File.ReadAllText(path);
+        return JsonSerializer.Serialize(message, Options);
     }
 }

@@ -8,14 +8,14 @@ public enum HttpLabels
     Post,
     Delete,
     Patch,
-    
+
     // General Headers
     CacheControl,
     Connection,
     Date,
     TransferEncoding,
     Via,
-    
+
     // Request Headers
     Host,
     UserAgent,
@@ -26,18 +26,18 @@ public enum HttpLabels
     Cookie,
     Referer,
     Origin,
-    
+
     // Response Headers
     Server,
     SetCookie,
     Location,
-    
+
     // Entity Headers
     ContentLength,
     ContentType,
     ContentLanguage,
     ContentEncoding,
-    
+
     // Misc
     Unknown
 }

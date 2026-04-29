@@ -1,6 +1,6 @@
 ﻿namespace shared;
 
-public class HttpLabelsMap
+public static class HttpLabelsMap
 {
     private static readonly Dictionary<string, HttpLabels> Map = new()
     {
@@ -43,12 +43,9 @@ public class HttpLabelsMap
 
     public static HttpLabels GetLabel(string headerName)
     {
-        if (string.IsNullOrEmpty(headerName))
-        {
-            return HttpLabels.Unknown;
-        }
+        if (string.IsNullOrEmpty(headerName)) return HttpLabels.Unknown;
 
-        bool found = Map.TryGetValue(headerName.ToLower(), out HttpLabels label);
+        var found = Map.TryGetValue(headerName.ToLower(), out var label);
 
         return found ? label : HttpLabels.Unknown;
     }

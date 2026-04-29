@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>TP2 Réseau</title>
-    <link rel="stylesheet" href="../Styles/style.css">
+    <link href="../Styles/style.css" rel="stylesheet">
     <script src="../Scripts/script.js"></script>
 </head>
 <body>
-    <h1>Bienvenue sur le TP2 Réseau</h1>
-    <p>Veuillez choisir une option :</p>
-    <ul>
-        <form id="messageForm" action="/api/messages" method="post">
-            <label for="message">Nouveau message</label>
-            <input type="text" id="message" name="message" placeholder="Entrez votre message">
-            <button type="submit">Envoyer</button>
-        </form>
-        <li><a href="/api/messages">Afficher la liste des éléments</a></li>
-    </ul>
+<h1>Bienvenue sur le TP2 Réseau</h1>
+<p>Veuillez choisir une option :</p>
+<ul>
+    <form action="/api/messages" id="messageForm" method="post">
+        <label for="message">Nouveau message</label>
+        <input id="message" name="message" placeholder="Entrez votre message" type="text">
+        <button type="submit">Envoyer</button>
+    </form>
+    <li><a href="/api/messages">Afficher la liste des éléments</a></li>
+</ul>
 </body>
 </html>
