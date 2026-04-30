@@ -3,8 +3,18 @@ using System.Text;
 
 namespace Server;
 
+/// <summary>
+///     Classe utilitaire pour envoyer des réponses HTTP.
+/// </summary>
 public static class HttpWriter
 {
+    /// <summary>
+    ///     Fonction utilitaire pour envoyer des réponses générales HTTP.
+    /// </summary>
+    /// <param name="stream">Flux réseau du client.</param>
+    /// <param name="contentType">Le type du body de la réponse envoyée.</param>
+    /// <param name="statusCode">L'état de la requête.</param>
+    /// <param name="body">Le body de la réponse (non obligatoire)</param>
     public static async Task WriteResponseAsync(NetworkStream stream, string contentType, int statusCode, string body)
     {
         StringBuilder sb = new();
@@ -20,6 +30,11 @@ public static class HttpWriter
         await stream.WriteAsync(responseBytes, 0, responseBytes.Length);
     }
 
+    /// <summary>
+    ///     Fonction utilitaire pour envoyer une redirection HTTP 303 See Other.
+    /// </summary>
+    /// <param name="stream">Flux réseau du client.</param>
+    /// <param name="location">L'url à lequel on souhaite rediriger.</param>
     public static async Task WriteRedirectAsync(NetworkStream stream, string location)
     {
         var response =

@@ -1,7 +1,13 @@
 ﻿namespace shared;
 
+/// <summary>
+///     Classe utilitaire pour convertir les labels des requêtes en enum HttpLabels.
+/// </summary>
 public static class HttpLabelsMap
 {
+    /// <summary>
+    ///     Dictionnaire liant les labels de requêtes HTTP (en minuscules) à leurs équivalents dans l'enum HttpLabels.
+    /// </summary>
     private static readonly Dictionary<string, HttpLabels> Map = new()
     {
         // Verbs
@@ -41,6 +47,11 @@ public static class HttpLabelsMap
         { "content-encoding", HttpLabels.ContentEncoding }
     };
 
+    /// <summary>
+    ///     Fonction pour retrouver la valeur de HttpLabels correspondant à un label de requête HTTP donné.
+    /// </summary>
+    /// <param name="headerName">Label de la requête.</param>
+    /// <returns>Enum correspondant.</returns>
     public static HttpLabels GetLabel(string headerName)
     {
         if (string.IsNullOrEmpty(headerName)) return HttpLabels.Unknown;

@@ -2,8 +2,23 @@
 
 namespace Server;
 
+/// <summary>
+///     Classe utilitaire pour convertir des urls.
+/// </summary>
 public static class UrlParser
 {
+    /// <summary>
+    ///     Fonction utilitaire pour retourner la fonction correspondante à notre requête ainsi que l'id du message (si
+    ///     nécessaire).
+    /// </summary>
+    /// <param name="url">Url de la requête.</param>
+    /// <param name="label">Méthode de la requête.</param>
+    /// <returns>Fonction correspondante et id du message.</returns>
+    /// <exception cref="ArgumentException">
+    ///     405 - Si url == / && méthode != GET
+    ///     404 - Si url est invalide pour notre API
+    ///     400 - Si méthode non supportée (GET, POST, PUT, PATCH, DELETE)
+    /// </exception>
     public static (Func<string, bool, string, string> method, string param) Parse(string url, HttpLabels label)
     {
         var parts = url.Split('/', StringSplitOptions.RemoveEmptyEntries);
@@ -32,14 +47,20 @@ public static class UrlParser
             case HttpLabels.Delete:
                 return (Views.Delete, id);
             case HttpLabels.Patch:
-                return (Views.Patch, id);
+                return (Views.Update, id);
             case HttpLabels.Put:
-                return (Views.Patch, id);
+                return (Views.Update, id);
             default:
-                throw new ArgumentException("405");
+                throw new ArgumentException("400");
         }
     }
 
+    /// <summary>
+    ///     Fonction utilitaire qui retourne nos fichiers CSS et JS (navigateur seulement)
+    /// </summary>
+    /// <param name="url">Url de la requête.</param>
+    /// <returns>La fonction qui retourne la vue correspondante et un string vide (pas besoin de l'id)</returns>
+    /// <exception cref="ArgumentException">404 - Si autre fichier demandé (non supporté)</exception>
     private static (Func<string, bool, string, string> method, string param) GetUrl(string url)
     {
         if (url.Contains("script")) return (Views.GetJs, "");

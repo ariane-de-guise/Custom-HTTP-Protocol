@@ -1,5 +1,8 @@
 ﻿namespace shared;
 
+/// <summary>
+///     Enum contenant plusieurs en-têtes HTTP.
+/// </summary>
 public enum HttpLabels
 {
     // Verbs
